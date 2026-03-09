@@ -1,5 +1,17 @@
-from django.urls import path
+from rest_framework.routers import DefaultRouter
+from .views import (
+    UserProfileViewSet, BusinessViewSet, BusinessStageHistoryViewSet,
+    StageStatusViewSet, FormResponseViewSet, DiagnosisViewSet,
+    ExperimentViewSet
+)
 
-urlpatterns = [
-    # aqui vão entrar as rotas da API (cidades, categorias, etc.)
-]
+router = DefaultRouter()
+router.register(r'profiles', UserProfileViewSet, basename='profile')
+router.register(r'businesses', BusinessViewSet, basename='business')
+router.register(r'stage-history', BusinessStageHistoryViewSet, basename='stage-history')
+router.register(r'stage-status', StageStatusViewSet, basename='stage-status')
+router.register(r'form-responses', FormResponseViewSet, basename='form-response')
+router.register(r'diagnoses', DiagnosisViewSet, basename='diagnosis')
+router.register(r'experiments', ExperimentViewSet, basename='experiment')
+
+urlpatterns = router.urls
