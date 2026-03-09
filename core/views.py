@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, generics
 from .models import (
     UserProfile, Business, BusinessStageHistory,
     StageStatus, FormResponse, Diagnosis, Experiment
@@ -6,8 +6,10 @@ from .models import (
 from .serializers import (
     UserProfileSerializer, BusinessSerializer, BusinessStageHistorySerializer,
     StageStatusSerializer, FormResponseSerializer, DiagnosisSerializer,
-    ExperimentSerializer
+    ExperimentSerializer, RegisterSerializer
 )
+
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 class UserProfileViewSet(viewsets.ModelViewSet):
@@ -78,3 +80,26 @@ class ExperimentViewSet(viewsets.ModelViewSet):
         return Experiment.objects.filter(
             business__owner=self.request.user
         )
+
+class RegisterView(generics.CreateAPIView):
+    serializer_class = RegisterSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        # Já devolve os tokens JWT junto com o registro
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+            },
+            'tokens': {
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            }
+        }, status=status.HTTP_201_CREATED)
