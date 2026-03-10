@@ -92,7 +92,7 @@ else:
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': os.environ.get('POSTGRES_DB', 'guianorte'),
             'USER': os.environ.get('POSTGRES_USER', 'guianorte'),
-            'PASSWORD': os.environ.get('gcLDbup7NS5Jub3cGFS2K03jBJ92mIJ4XhtHsDruLbX51puQ7mK8BAKRodoKsIxK', ''),
+            'PASSWORD': os.environ.get('POSTGRES_PASSWORD', ''),
             'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
             'PORT': os.environ.get('POSTGRES_PORT', '5432'),
         }
