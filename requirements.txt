@@ -9,3 +9,4 @@ sqlparse==0.5.5
 packaging==26.0
 drf-spectacular
 djangorestframework-simplejwt
+psycopg2-binary
