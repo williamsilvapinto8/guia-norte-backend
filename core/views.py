@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema  # adicione esse import no topo
 from rest_framework import viewsets, permissions, generics, status
 from .models import (
     UserProfile, Business, BusinessStageHistory,
@@ -15,7 +16,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
 from .permissions import HasN8NAPIKey
-from drf_spectacular.utils import extend_schema  # adicione esse import no topo
 
 
 class UserProfileViewSet(viewsets.ModelViewSet):
