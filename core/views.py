@@ -11,6 +11,10 @@ from .serializers import (
 
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
+#Adicionados em 11/03, essa lista abaixo e class N8NWebhookReceiver
+from rest_framework.views import APIView
+from rest_framework import status
+from .permissions import HasN8NAPIKey
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
@@ -103,3 +107,17 @@ class RegisterView(generics.CreateAPIView):
                 'access': str(refresh.access_token),
             }
         }, status=status.HTTP_201_CREATED)
+
+class N8NWebhookReceiver(APIView):
+    # Aqui está o segredo: usamos a permissão da API Key em vez do JWT
+    permission_classes = [HasN8NAPIKey] 
+
+    def post(self, request):
+        # Aqui entrará a lógica para criar o User/Business 
+        # ou atualizar o Diagnosis
+        dados = request.data
+
+        return Response(
+            {"mensagem": "Dados recebidos com sucesso pelo n8n!"}, 
+            status=status.HTTP_200_OK
+        )
