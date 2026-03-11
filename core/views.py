@@ -109,7 +109,7 @@ class RegisterView(generics.CreateAPIView):
                 'access': str(refresh.access_token),
             }
         }, status=status.HTTP_201_CREATED)
-
+'''
 class N8NHealthCheckView(APIView):
     authentication_classes = []
     permission_classes = [HasN8NAPIKey]
@@ -120,3 +120,17 @@ class N8NHealthCheckView(APIView):
             "status": "ok",
             "mensagem": "Conexão com Guia Norte autenticada com sucesso!"
         })
+'''
+class N8NWebhookReceiver(APIView):
+    # Aqui está o segredo: usamos a permissão da API Key em vez do JWT
+    permission_classes = [HasN8NAPIKey] 
+
+    def post(self, request):
+        # Aqui entrará a lógica para criar o User/Business 
+        # ou atualizar o Diagnosis
+        dados = request.data
+
+        return Response(
+            {"mensagem": "Dados recebidos com sucesso pelo n8n!"}, 
+            status=status.HTTP_200_OK
+        )
