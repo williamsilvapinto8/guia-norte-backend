@@ -2,7 +2,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     UserProfileViewSet, BusinessViewSet, BusinessStageHistoryViewSet,
     StageStatusViewSet, FormResponseViewSet, DiagnosisViewSet,
-    ExperimentViewSet
+    ExperimentViewSet, N8NHealthCheckView
 )
 
 router = DefaultRouter()
@@ -14,4 +14,7 @@ router.register(r'form-responses', FormResponseViewSet, basename='form-response'
 router.register(r'diagnoses', DiagnosisViewSet, basename='diagnosis')
 router.register(r'experiments', ExperimentViewSet, basename='experiment')
 
-urlpatterns = router.urls
+urlpatterns = [
+    path('n8n/health/', N8NHealthCheckView.as_view(), name='n8n-health'),
+
+]
