@@ -15,6 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
 from .permissions import HasN8NAPIKey
+from drf_spectacular.utils import extend_schema  # adicione esse import no topo
 
 
 class UserProfileViewSet(viewsets.ModelViewSet):
@@ -110,12 +111,10 @@ class RegisterView(generics.CreateAPIView):
         }, status=status.HTTP_201_CREATED)
 
 class N8NHealthCheckView(APIView):
-    """
-    Endpoint simples para o n8n testar a autenticação via API Key.
-    """
     authentication_classes = []
     permission_classes = [HasN8NAPIKey]
 
+    @extend_schema(exclude=True)  # esconde do Swagger (é endpoint interno)
     def get(self, request):
         return Response({
             "status": "ok",
