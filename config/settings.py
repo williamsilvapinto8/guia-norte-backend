@@ -15,6 +15,8 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Chave exclusiva para comunicação com o n8n
+N8N_API_KEY = os.environ.get('N8N_API_KEY', 'sua-chave-secreta-provisoria-123')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
