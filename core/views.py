@@ -109,12 +109,15 @@ class RegisterView(generics.CreateAPIView):
                 'access': str(refresh.access_token),
             }
         }, status=status.HTTP_201_CREATED)
-'''
+
 class N8NHealthCheckView(APIView):
-    authentication_classes = []
+    """
+    Endpoint simples para o n8n testar a autenticação via API Key.
+    Não exige JWT — usa apenas a chave de API estática.
+    """
+    authentication_classes = []   # ignora autenticação JWT
     permission_classes = [HasN8NAPIKey]
 
-    @extend_schema(exclude=True)  # esconde do Swagger (é endpoint interno)
     def get(self, request):
         return Response({
             "status": "ok",
@@ -134,3 +137,4 @@ class N8NWebhookReceiver(APIView):
             {"mensagem": "Dados recebidos com sucesso pelo n8n!"}, 
             status=status.HTTP_200_OK
         )
+'''
