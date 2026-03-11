@@ -16,5 +16,4 @@ router.register(r'experiments', ExperimentViewSet, basename='experiment')
 
 urlpatterns = [
     path('n8n/health/', N8NHealthCheckView.as_view(), name='n8n-health'),
-
-]
+] + router.urls
