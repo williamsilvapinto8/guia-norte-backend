@@ -2,7 +2,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     UserProfileViewSet, BusinessViewSet, BusinessStageHistoryViewSet,
     StageStatusViewSet, FormResponseViewSet, DiagnosisViewSet,
-    ExperimentViewSet, N8NHealthCheckView
+    ExperimentViewSet, N8NHealthCheckView,
 )
 
 router = DefaultRouter()
