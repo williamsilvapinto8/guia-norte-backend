@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import (
     UserProfile, Business, BusinessStageHistory,
-    StageStatus, FormResponse, Diagnosis, Experiment
+    StageStatus, FormResponse, Diagnosis, Experiment,
 )
 
 User = get_user_model()
@@ -98,3 +98,22 @@ class RegisterSerializer(serializers.ModelSerializer):
         # Cria o UserProfile automaticamente com role padrão
         UserProfile.objects.create(user=user, role='entrepreneur')
         return user
+class StageStatusProgressUpdateSerializer(serializers.Serializer):
+    ideation_progress = serializers.IntegerField(required=False, min_value=0, max_value=100)
+    plan_progress = serializers.IntegerField(required=False, min_value=0, max_value=100)
+    mvp_progress = serializers.IntegerField(required=False, min_value=0, max_value=100)
+    current_stage = serializers.ChoiceField(
+        required=False,
+        choices=StageStatus._meta.get_field("current_stage").choices,
+    )
+
+    def update(self, instance, validated_data):
+        # aplica apenas campos enviados
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        instance.save()
+        return instance
+
+    def create(self, validated_data):
+        # não usaremos create neste endpoint
+        raise NotImplementedError("Use apenas para update")
