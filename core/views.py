@@ -1,6 +1,11 @@
-from .utils import advance_business_stage
+from rest_framework import status, viewsets, permissions, generics
+
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from drf_spectacular.utils import extend_schema  # adicione esse import no topo
-from rest_framework import viewsets, permissions, generics, status
+
 from .models import (
     UserProfile, Business, BusinessStageHistory,
     StageStatus, FormResponse, Diagnosis, Experiment
@@ -11,13 +16,8 @@ from .serializers import (
     ExperimentSerializer, RegisterSerializer, StageStatusProgressUpdateSerializer,
 )
 
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.response import Response
-#Adicionados em 11/03, essa lista abaixo e class N8NWebhookReceiver
-from rest_framework.views import APIView
-from rest_framework import status
+from .utils import advance_business_stage
 from .permissions import HasN8NAPIKey
-
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
@@ -137,31 +137,47 @@ class N8NHealthCheckView(APIView):
             "mensagem": "Conexão com Guia Norte autenticada com sucesso!"
         })
 
-class N8NStageStatusProgressUpdateView(APIView):
+class N8NStageStatusProgressUpdateView(generics.UpdateAPIView): # <-- Use generics.UpdateAPIView
     """
     Endpoint para o n8n atualizar progresso e/ou estágio de StageStatus de um Business.
     Autenticação via chave de API (HasN8NAPIKey).
     """
     permission_classes = [HasN8NAPIKey]
-    http_method_names = ['patch']
-def patch(self, request, business_id):
-    try:
-        # Busca o StageStatus associado ao Business_id
-        stage_status = StageStatus.objects.get(business_id=business_id)
-    except StageStatus.DoesNotExist:
-        return Response(
-            {"detail": "StageStatus não encontrado para este business."},
-            status=status.HTTP_404_NOT_FOUND,
-        )
+    serializer_class = StageStatusProgressUpdateSerializer # <-- Defina o serializer aqui
+    lookup_field = 'business_id' # <-- Define qual campo da URL será usado para buscar o objeto
+    queryset = StageStatus.objects.all() # <-- Define o queryset base
+# O método PATCH já é tratado por UpdateAPIView.
+# Precisamos sobrescrever get_object para buscar pelo business_id
+def get_object(self):
+    queryset = self.filter_queryset(self.get_queryset())
+    # Garante que o StageStatus pertence ao business_id passado na URL
+    obj = queryset.get(business_id=self.kwargs[self.lookup_field])
+    self.check_object_permissions(self.request, obj)
+    return obj
 
-    serializer = StageStatusProgressUpdateSerializer(
-        instance=stage_status,
-        data=request.data,
-        partial=True, # Permite atualização parcial
-    )
+# O método update já é chamado por UpdateAPIView, que usa o serializer.save()
+# A resposta já será o StageStatusSerializer(stage_status).data
+# Para garantir que a resposta seja o StageStatus completo, vamos sobrescrever o update
+def get_serializer_context(self):
+    return {'request': self.request}
+
+def get_response_serializer(self, instance):
+    # Importa o StageStatusSerializer aqui para evitar circular import se necessário
+    from .serializers import StageStatusSerializer
+    return StageStatusSerializer(instance, context=self.get_serializer_context())
+
+def update(self, request, *args, **kwargs):
+    partial = kwargs.pop('partial', False)
+    instance = self.get_object()
+    serializer = self.get_serializer(instance, data=request.data, partial=partial)
     serializer.is_valid(raise_exception=True)
-    serializer.save()
+    self.perform_update(serializer)
 
-    # Retorna o StageStatus atualizado, usando o serializer padrão para uma resposta completa
-    # Ou, se preferir, pode retornar um JSON customizado como no exemplo anterior
-    return Response(StageStatusSerializer(stage_status).data, status=status.HTTP_200_OK)
+    if getattr(instance, '_prefetched_objects_cache', None):
+        # If 'prefetch_related' has been applied to a queryset, we need to
+        # forcibly invalidate the prefetch cache on the instance.
+        instance._prefetched_objects_cache = {}
+
+    # Usa o StageStatusSerializer para a resposta completa
+    response_serializer = self.get_response_serializer(instance)
+    return Response(response_serializer.data)
