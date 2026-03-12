@@ -8,7 +8,7 @@ from .models import (
 from .serializers import (
     UserProfileSerializer, BusinessSerializer, BusinessStageHistorySerializer,
     StageStatusSerializer, FormResponseSerializer, DiagnosisSerializer,
-    ExperimentSerializer, RegisterSerializer
+    ExperimentSerializer, RegisterSerializer, StageStatusProgressUpdateSerializer,
 )
 
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -136,18 +136,31 @@ class N8NHealthCheckView(APIView):
             "status": "ok",
             "mensagem": "Conexão com Guia Norte autenticada com sucesso!"
         })
-'''
-class N8NWebhookReceiver(APIView):
-    # Aqui está o segredo: usamos a permissão da API Key em vez do JWT
-    permission_classes = [HasN8NAPIKey] 
 
-    def post(self, request):
-        # Aqui entrará a lógica para criar o User/Business 
-        # ou atualizar o Diagnosis
-        dados = request.data
-
+class N8NStageStatusProgressUpdateView(APIView):
+    """
+    Endpoint para o n8n atualizar progresso e/ou estágio de StageStatus de um Business.
+    Autenticação via chave de API (HasN8NAPIKey).
+    """
+    permission_classes = [HasN8NAPIKey]
+def patch(self, request, business_id):
+    try:
+        # Busca o StageStatus associado ao Business_id
+        stage_status = StageStatus.objects.get(business_id=business_id)
+    except StageStatus.DoesNotExist:
         return Response(
-            {"mensagem": "Dados recebidos com sucesso pelo n8n!"}, 
-            status=status.HTTP_200_OK
+            {"detail": "StageStatus não encontrado para este business."},
+            status=status.HTTP_404_NOT_FOUND,
         )
-'''
+
+    serializer = StageStatusProgressUpdateSerializer(
+        instance=stage_status,
+        data=request.data,
+        partial=True, # Permite atualização parcial
+    )
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+
+    # Retorna o StageStatus atualizado, usando o serializer padrão para uma resposta completa
+    # Ou, se preferir, pode retornar um JSON customizado como no exemplo anterior
+    return Response(StageStatusSerializer(stage_status).data, status=status.HTTP_200_OK)
