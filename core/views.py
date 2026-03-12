@@ -1,3 +1,4 @@
+from .utils import advance_business_stage
 from drf_spectacular.utils import extend_schema  # adicione esse import no topo
 from rest_framework import viewsets, permissions, generics, status
 from .models import (
@@ -65,7 +66,19 @@ class FormResponseViewSet(viewsets.ModelViewSet):
         )
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        form_response = serializer.save(author=self.request.user)
+
+        business = form_response.business
+        form_type = form_response.form_type
+
+        # Regras simples de avanço de estágio
+        if form_type == "plan":
+            # tenta avançar de ideation -> plan
+            advance_business_stage(business, target_stage="plan", changed_by=self.request.user)
+        elif form_type == "mvp":
+            # tenta avançar de plan -> mvp
+            advance_business_stage(business, target_stage="mvp", changed_by=self.request.user)
+        # se for ideation, mantemos como está (já nasce em ideation)
 
 
 class DiagnosisViewSet(viewsets.ModelViewSet):
