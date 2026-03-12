@@ -109,22 +109,15 @@ class RegisterSerializer(serializers.ModelSerializer):
         # Cria o UserProfile automaticamente com role padrão
         UserProfile.objects.create(user=user, role='entrepreneur')
         return user
-class StageStatusProgressUpdateSerializer(serializers.Serializer):
-    ideation_progress = serializers.IntegerField(required=False, min_value=0, max_value=100)
-    plan_progress = serializers.IntegerField(required=False, min_value=0, max_value=100)
-    mvp_progress = serializers.IntegerField(required=False, min_value=0, max_value=100)
-    current_stage = serializers.ChoiceField(
-        required=False,
-        choices=StageStatus._meta.get_field("current_stage").choices,
-    )
-
-    def update(self, instance, validated_data):
-        # aplica apenas campos enviados
-        for field, value in validated_data.items():
-            setattr(instance, field, value)
-        instance.save()
-        return instance
-
-    def create(self, validated_data):
-        # não usaremos create neste endpoint
-        raise NotImplementedError("Use apenas para update")
+class StageStatusProgressUpdateSerializer(serializers.ModelSerializer): # <-- Mude para ModelSerializer
+    class Meta:
+        model = StageStatus
+        fields = [ # Liste explicitamente todos os campos que podem ser atualizados
+            'ideation_progress', 'plan_progress', 'mvp_progress', 'current_stage',
+            'ideation_started_at', 'ideation_completed_at',
+            'plan_started_at', 'plan_completed_at',
+            'mvp_started_at', 'mvp_completed_at',
+        ]
+        # 'id' e 'business' não devem ser atualizados por este serializer,
+        # mas serão incluídos na resposta final pelo StageStatusSerializer
+        read_only_fields = ['id', 'business']
