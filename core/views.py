@@ -1,5 +1,5 @@
+from django.http import Http404
 from rest_framework import status, viewsets, permissions, generics
-
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -147,12 +147,14 @@ class N8NStageStatusProgressUpdateView(generics.UpdateAPIView):
     serializer_class = StageStatusProgressUpdateSerializer
     lookup_field = 'business_id'
     queryset = StageStatus.objects.all()
-
     def get_object(self):
-        queryset = self.filter_queryset(self.get_queryset())
-        obj = queryset.get(business_id=self.kwargs[self.lookup_field])
-        self.check_object_permissions(self.request, obj)
-        return obj
+            queryset = self.filter_queryset(self.get_queryset())
+            try:
+                obj = queryset.get(business_id=self.kwargs[self.lookup_field])
+            except StageStatus.DoesNotExist: # <-- Capture a exceção específica
+                raise Http404("StageStatus não encontrado para este business.") # <-- Levante Http404
+            self.check_object_permissions(self.request, obj)
+            return obj
 
     def get_serializer_context(self):
         return {'request': self.request}
