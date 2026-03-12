@@ -2,8 +2,10 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import (
     UserProfile, Business, BusinessStageHistory,
-    StageStatus, FormResponse, Diagnosis, Experiment,
+    StageStatus, FormResponse, Diagnosis, Experiment, User,
 )
+
+from rest_framework.validators import MinValueValidator, MaxValueValidator
 
 User = get_user_model()
 
