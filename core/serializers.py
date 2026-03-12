@@ -32,7 +32,14 @@ class StageStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = StageStatus
         fields = '__all__'
-
+        # Se você quiser campos específicos, pode listar assim:
+        # fields = [
+        #     'id', 'business', 'ideation_started_at', 'ideation_completed_at',
+        #     'ideation_progress', 'plan_started_at', 'plan_completed_at',
+        #     'plan_progress', 'mvp_started_at', 'mvp_completed_at',
+        #     'mvp_progress', 'current_stage'
+        # ]
+        read_only_fields = ['id', 'business'] # business é um FK, geralmente read-only na serialização direta
 
 class FormResponseSerializer(serializers.ModelSerializer):
     class Meta:
