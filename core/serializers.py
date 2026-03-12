@@ -54,6 +54,25 @@ class ExperimentSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['created_at', 'updated_at']
 
+    def validate(self, attrs):
+        request = self.context.get('request')
+        business = attrs.get('business')
+
+        # Segurança extra: garante que o negócio pertence ao usuário
+        if business and business.owner != request.user:
+            raise serializers.ValidationError(
+                {"business": "Você não tem permissão para criar experimentos para este negócio."}
+            )
+
+        # Regra da versão free: apenas 1 experimento por negócio
+        existing_count = Experiment.objects.filter(business=business).count()
+        if existing_count >= 1:
+            raise serializers.ValidationError(
+                {"non_field_errors": ["Na versão gratuita, você só pode cadastrar 1 experimento por negócio."]}
+            )
+
+        return attrs
+
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
