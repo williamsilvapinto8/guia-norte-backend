@@ -28,7 +28,7 @@ def test_advance_stage_from_ideation_to_plan_on_form_response(api_client):
     api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
 
     # 3) Envia um FormResponse do tipo "plan"
-    form_response_url = reverse("formresponse-list")
+    form_response_url = reverse("form-response-list")
     payload = {
         "business": business.id,
         "form_type": "plan",
@@ -86,7 +86,7 @@ def test_advance_stage_from_plan_to_mvp_on_form_response(api_client):
     api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
 
     # 3) Envia um FormResponse do tipo "mvp"
-    form_response_url = reverse("formresponse-list")
+    form_response_url = reverse("form-response-list")
     payload = {
         "business": business.id,
         "form_type": "mvp",
@@ -136,7 +136,7 @@ def test_no_stage_advance_on_ideation_form_response(api_client):
     api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
 
     # 3) Envia um FormResponse do tipo "ideation"
-    form_response_url = reverse("formresponse-list")
+    form_response_url = reverse("form-response-list")
     payload = {
         "business": business.id,
         "form_type": "ideation",
