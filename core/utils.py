@@ -53,28 +53,30 @@ def advance_business_stage(business: Business, target_stage: str, changed_by=Non
     if target_stage == "plan":
         if not stage_status.plan_started_at:
             stage_status.plan_started_at = now
-        stage_status.ideation_completed_at = stage_status.ideation_completed_at or now
+        stage_status.ideation_completed_at = now
         stage_status.ideation_progress = 100
-        # suposição: ao entrar em plan, progresso inicial 0 (ou 10, se preferir)
-        stage_status.plan_progress = max(stage_status.plan_progress, 0)
+																				  
+        stage_status.plan_progress = 0 # Inicia o progresso do plano
 
     elif target_stage == "mvp":
         if not stage_status.mvp_started_at:
             stage_status.mvp_started_at = now
-        stage_status.plan_completed_at = stage_status.plan_completed_at or now
+        stage_status.plan_completed_at = now
         stage_status.plan_progress = 100
-        stage_status.mvp_progress = max(stage_status.mvp_progress, 0)
+        stage_status.mvp_progress = 0 # Inicia o progresso do mvp
 
     elif target_stage == "operation":
-        # negócio concluído em termos de jornada de MVP
-        stage_status.mvp_completed_at = stage_status.mvp_completed_at or now
+														 
+        if not stage_status.mvp_completed_at: # Pode ser que o MVP não tenha sido "completado" formalmente
+            stage_status.mvp_completed_at = now
         stage_status.mvp_progress = 100
+        stage_status.current_stage = "done" # Marca como concluído
 
-    # Atualiza current_stage agregador
-    if target_stage in ("ideation", "plan", "mvp"):
-        stage_status.current_stage = target_stage
-    elif target_stage == "operation":
-        stage_status.current_stage = "done"
-
+									  
+												   
+    stage_status.current_stage = target_stage
+									 
     stage_status.save()
+
+					   
     return stage_status
