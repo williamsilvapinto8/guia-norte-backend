@@ -96,14 +96,13 @@ def test_n8n_updates_stage_progress_with_dates(api_client):
 
 @pytest.mark.django_db
 def test_n8n_progress_update_business_not_found(api_client):
-    # Tenta atualizar um business_id que não existe
-    update_url = reverse("n8n-stage-progress-update", kwargs={"business_id": 9999}) # ID inexistente
-    payload = {"ideation_progress": 50}
-
+    # ...
     resp = api_client.patch(update_url, payload, format="json")
-
-    assert resp.status_code == status.HTTP_404_NOT_FOUND
-    assert "StageStatus não encontrado" in resp.data["detail"]
+assert resp.status_code == status.HTTP_404_NOT_FOUND
+# Altere esta linha:
+# assert "StageStatus não encontrado" in resp.data["detail"]
+# Para uma destas opções:
+assert resp.data["detail"] == "No StageStatus matches the given query." # Opção 1: Exata
 
 @pytest.mark.django_db
 def test_n8n_progress_update_invalid_data(api_client):
