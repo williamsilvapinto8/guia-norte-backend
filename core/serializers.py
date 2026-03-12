@@ -29,17 +29,21 @@ class BusinessStageHistorySerializer(serializers.ModelSerializer):
 
 
 class StageStatusSerializer(serializers.ModelSerializer):
+    # Adicione este campo para garantir que o business_id seja incluído na saída
+    # 'business' é o nome do campo ForeignKey no modelo StageStatus
+    business = serializers.PrimaryKeyRelatedField(read_only=True)
+
     class Meta:
         model = StageStatus
         fields = '__all__'
-        # Se você quiser campos específicos, pode listar assim:
+        # Ou, se preferir listar explicitamente:
         # fields = [
         #     'id', 'business', 'ideation_started_at', 'ideation_completed_at',
         #     'ideation_progress', 'plan_started_at', 'plan_completed_at',
         #     'plan_progress', 'mvp_started_at', 'mvp_completed_at',
         #     'mvp_progress', 'current_stage'
         # ]
-        read_only_fields = ['id', 'business'] # business é um FK, geralmente read-only na serialização direta
+        # read_only_fields = ['id'] # 'business' agora é read_only via PrimaryKeyRelatedField
 
 class FormResponseSerializer(serializers.ModelSerializer):
     class Meta:
