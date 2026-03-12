@@ -137,47 +137,47 @@ class N8NHealthCheckView(APIView):
             "mensagem": "Conexão com Guia Norte autenticada com sucesso!"
         })
 
-class N8NStageStatusProgressUpdateView(generics.UpdateAPIView): # <-- Use generics.UpdateAPIView
+
+class N8NStageStatusProgressUpdateView(generics.UpdateAPIView):
     """
     Endpoint para o n8n atualizar progresso e/ou estágio de StageStatus de um Business.
     Autenticação via chave de API (HasN8NAPIKey).
     """
     permission_classes = [HasN8NAPIKey]
-    serializer_class = StageStatusProgressUpdateSerializer # <-- Defina o serializer aqui
-    lookup_field = 'business_id' # <-- Define qual campo da URL será usado para buscar o objeto
-    queryset = StageStatus.objects.all() # <-- Define o queryset base
-# O método PATCH já é tratado por UpdateAPIView.
-# Precisamos sobrescrever get_object para buscar pelo business_id
-def get_object(self):
-    queryset = self.filter_queryset(self.get_queryset())
-    # Garante que o StageStatus pertence ao business_id passado na URL
-    obj = queryset.get(business_id=self.kwargs[self.lookup_field])
-    self.check_object_permissions(self.request, obj)
-    return obj
+    serializer_class = StageStatusProgressUpdateSerializer
+    lookup_field = 'business_id'
+    queryset = StageStatus.objects.all()
 
-# O método update já é chamado por UpdateAPIView, que usa o serializer.save()
-# A resposta já será o StageStatusSerializer(stage_status).data
-# Para garantir que a resposta seja o StageStatus completo, vamos sobrescrever o update
-def get_serializer_context(self):
-    return {'request': self.request}
+    def get_object(self):
+        queryset = self.filter_queryset(self.get_queryset())
+        obj = queryset.get(business_id=self.kwargs[self.lookup_field])
+        self.check_object_permissions(self.request, obj)
+        return obj
 
-def get_response_serializer(self, instance):
-    # Importa o StageStatusSerializer aqui para evitar circular import se necessário
-    from .serializers import StageStatusSerializer
-    return StageStatusSerializer(instance, context=self.get_serializer_context())
+    def get_serializer_context(self):
+        return {'request': self.request}
 
-def update(self, request, *args, **kwargs):
-    partial = kwargs.pop('partial', False)
-    instance = self.get_object()
-    serializer = self.get_serializer(instance, data=request.data, partial=partial)
-    serializer.is_valid(raise_exception=True)
-    self.perform_update(serializer)
+    def get_response_serializer(self, instance):
+        from .serializers import StageStatusSerializer
+        return StageStatusSerializer(instance, context=self.get_serializer_context())
 
-    if getattr(instance, '_prefetched_objects_cache', None):
-        # If 'prefetch_related' has been applied to a queryset, we need to
-        # forcibly invalidate the prefetch cache on the instance.
-        instance._prefetched_objects_cache = {}
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
 
-    # Usa o StageStatusSerializer para a resposta completa
-    response_serializer = self.get_response_serializer(instance)
-    return Response(response_serializer.data)
+        if getattr(instance, '_prefetched_objects_cache', None):
+            instance._prefetched_objects_cache = {}
+
+        response_serializer = self.get_response_serializer(instance)
+
+        # --- ADICIONE ESTAS DUAS LINHAS PARA DEPURAR ---
+        print(f"\n--- DEBUG: Response data from N8NStageStatusProgressUpdateView ---")
+        print(response_serializer.data)
+        print(f"--- END DEBUG ---\n")
+        # ------------------------------------------------
+
+        return Response(response_serializer.data)
+
