@@ -143,6 +143,7 @@ class N8NStageStatusProgressUpdateView(APIView):
     Autenticação via chave de API (HasN8NAPIKey).
     """
     permission_classes = [HasN8NAPIKey]
+    http_method_names = ['patch']
 def patch(self, request, business_id):
     try:
         # Busca o StageStatus associado ao Business_id
