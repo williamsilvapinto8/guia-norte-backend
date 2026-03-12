@@ -4,8 +4,7 @@ from .models import (
     UserProfile, Business, BusinessStageHistory,
     StageStatus, FormResponse, Diagnosis, Experiment, User,
 )
-
-from rest_framework.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 User = get_user_model()
 
