@@ -105,7 +105,7 @@ def test_n8n_progress_update_business_not_found(api_client):
 
     assert resp.status_code == status.HTTP_404_NOT_FOUND
     # Usando a opção 1 para a mensagem de erro exata
-    assert resp.data["detail"] == "No StageStatus matches the given query."
+    assert resp.data["detail"] == "StageStatus não encontrado para este business." # &lt;-- Mude aqui!
 
 @pytest.mark.django_db
 def test_n8n_progress_update_invalid_data(api_client):
