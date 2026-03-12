@@ -124,12 +124,15 @@ class StageStatusProgressUpdateSerializer(serializers.ModelSerializer):
         required=False,
         validators=[MinValueValidator(0), MaxValueValidator(100)]
     )
-class Meta:
-    model = StageStatus
-    fields = [
-        'ideation_progress', 'plan_progress', 'mvp_progress', 'current_stage',
-        'ideation_started_at', 'ideation_completed_at',
-        'plan_started_at', 'plan_completed_at',
-        'mvp_started_at', 'mvp_completed_at',
-    ]
-    read_only_fields = ['id', 'business']
+
+    class Meta: # <-- ESTA CLASSE META É CRUCIAL E DEVE ESTAR AQUI!
+        model = StageStatus
+        fields = [ # Liste explicitamente todos os campos que podem ser atualizados
+            'ideation_progress', 'plan_progress', 'mvp_progress', 'current_stage',
+            'ideation_started_at', 'ideation_completed_at',
+            'plan_started_at', 'plan_completed_at',
+            'mvp_started_at', 'mvp_completed_at',
+        ]
+        # 'id' e 'business' não devem ser atualizados por este serializer,
+        # mas serão incluídos na resposta final pelo StageStatusSerializer
+        read_only_fields = ['id', 'business']
