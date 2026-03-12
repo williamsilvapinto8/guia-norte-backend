@@ -15,14 +15,19 @@ User = get_user_model()
 @pytest.mark.django_db
 def test_create_experiment_limit_one_per_business(api_client):
     # 1) Cria um usuário e um Business
-    user = User.objects.create_user(username="testuser", email="user@example.com", password="SenhaForte123")
+    user_username = "testuser" # <-- O username que será usado para logar
+    user_email = "user@example.com"
+    user_password = "SenhaForte123"
+
+    user = User.objects.create_user(username=user_username, email=user_email, password=user_password)
     business = Business.objects.create(owner=user, name="Meu Negocio Teste", segment="Serviços")
 
     # 2) Loga o usuário para obter o token JWT
-    login_url = reverse("token_obtain_pair") # Verifique se esta é a URL correta do seu SimpleJWT
+    login_url = reverse("token_obtain_pair")
     resp_login = api_client.post(
         login_url,
-        {"username": "user@example.com", "password": "SenhaForte123"},
+        # AGORA, use o username que você criou para o usuário
+        {"username": user_username, "password": user_password}, # <-- ALTERADO AQUI
         format="json",
     )
     assert resp_login.status_code == 200
