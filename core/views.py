@@ -19,6 +19,8 @@ from .serializers import (
 from .utils import advance_business_stage
 from .permissions import HasN8NAPIKey
 
+from .serializers_onboarding import OnboardingSerializer
+
 class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
@@ -183,3 +185,24 @@ class N8NStageStatusProgressUpdateView(generics.UpdateAPIView):
 
         return Response(response_serializer.data)
 
+class OnboardingView(generics.CreateAPIView):
+    """
+    Endpoint para o formulário de captura/pré-cadastro.
+    Cria um novo usuário, um negócio e o status inicial de estágio.
+    """
+    serializer_class = OnboardingSerializer
+    permission_classes = [permissions.AllowAny] # Este endpoint é público para novos cadastros
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # O método create do serializer já lida com a criação de User, Business e StageStatus
+        # Ele retorna um dicionário com user_id, business_id e message
+        response_data = serializer.save() 
+
+        # Opcional: Se você quiser retornar tokens JWT automaticamente após o onboarding,
+        # você pode replicar a lógica da RegisterView aqui.
+        # Por enquanto, vamos retornar apenas o que o serializer.save() já nos dá.
+
+        return Response(response_data, status=status.HTTP_201_CREATED)
