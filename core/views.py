@@ -13,7 +13,7 @@ from .models import (
 from .serializers import (
     UserProfileSerializer, BusinessSerializer, BusinessStageHistorySerializer,
     StageStatusSerializer, FormResponseSerializer, DiagnosisSerializer,
-    ExperimentSerializer, RegisterSerializer, StageStatusProgressUpdateSerializer, OnboardingSerializer, FormResponseCreateSerializer, BusinessContextSerializer,
+    ExperimentSerializer, RegisterSerializer, StageStatusProgressUpdateSerializer, OnboardingSerializer, FormResponseCreateSerializer, BusinessContextSerializer, N8NDiagnosisCreateSerializer,
 )
 
 from .utils import advance_business_stage
@@ -274,3 +274,15 @@ class N8NBusinessContextView(generics.RetrieveAPIView):
         except Business.DoesNotExist:
             raise Http404("Negócio não encontrado para o ID fornecido.")
         return business
+
+class N8NDiagnosisCreateView(generics.CreateAPIView):
+    """
+    Endpoint para o n8n registrar diagnósticos gerados pela IA.
+    Autenticação via chave de API (HasN8NAPIKey).
+    """
+    permission_classes = [HasN8NAPIKey]
+    serializer_class = N8NDiagnosisCreateSerializer
+
+    def create(self, request, *args, **kwargs):
+        # usamos o CreateAPIView padrão, só expondo o serializer
+        return super().create(request, *args, **kwargs)
