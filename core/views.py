@@ -212,30 +212,40 @@ class FormResponseCreateAPIView(generics.CreateAPIView):
     Pode ser usado pelo frontend (com JWT) ou pelo n8n (com API Key).
     """
     serializer_class = FormResponseCreateSerializer
-    # Permissões:
-    # - IsAuthenticated: para usuários logados (frontend)
-    # - HasN8NAPIKey: para requisições do n8n
     permission_classes = [permissions.IsAuthenticated | HasN8NAPIKey]
 
+    def get_serializer_context(self):
+        """
+        Adiciona o business_id da URL ao contexto do serializer.
+        """
+        context = super().get_serializer_context()
+        context['business_id'] = self.kwargs.get('business_id')
+        return context
+
     def perform_create(self, serializer):
+        # Obtém o business_id do contexto (que veio da URL)
+        business_id = self.kwargs.get('business_id')
+        try:
+            business = Business.objects.get(id=business_id)
+        except Business.DoesNotExist:
+            raise Http404("Negócio não encontrado.")
+
         # O autor da resposta é o usuário logado (se houver)
-        # ou None se a requisição vier do n8n (que não tem um 'user' associado diretamente)
         author = self.request.user if self.request.user.is_authenticated else None
-        form_response = serializer.save(author=author)
 
-        # Lógica de avanço de estágio (opcional, pode ser movida para o n8n)
-        # No seu FormResponseViewSet, você já tem uma lógica similar.
-        # Podemos replicá-la aqui ou decidir que o n8n será o orquestrador.
-        # Por enquanto, vamos manter a lógica aqui para consistência com o que você já tinha.
+        # Validação de permissão extra: garante que o usuário tem acesso ao negócio
+        # (Isso já é feito no serializer, mas reforçar aqui não faz mal)
+        if author and business.owner != author:
+            raise permissions.PermissionDenied("Você não tem permissão para enviar respostas para este negócio.")
 
-        business = form_response.business
+        # Salva o FormResponse, passando o business e o author
+        form_response = serializer.save(business=business, author=author)
+
+        # Lógica de avanço de estágio
         form_type = form_response.form_type
-
         if form_type == "plan":
-            # tenta avançar de ideation -> plan
             advance_business_stage(business, target_stage="plan", changed_by=author)
         elif form_type == "mvp":
-            # tenta avançar de plan -> mvp
             advance_business_stage(business, target_stage="mvp", changed_by=author)
         # se for ideation, mantemos como está (já nasce em ideation)
 
