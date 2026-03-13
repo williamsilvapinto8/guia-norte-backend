@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     UserProfileViewSet, BusinessViewSet, BusinessStageHistoryViewSet,
     StageStatusViewSet, FormResponseViewSet, DiagnosisViewSet,
-    ExperimentViewSet, N8NHealthCheckView, N8NStageStatusProgressUpdateView,
+    ExperimentViewSet, N8NHealthCheckView, N8NStageStatusProgressUpdateView, FormResponseCreateAPIView,
 )
 
 router = DefaultRouter()
@@ -17,9 +17,6 @@ router.register(r'experiments', ExperimentViewSet, basename='experiment')
 
 urlpatterns = [
     path('n8n/health/', N8NHealthCheckView.as_view(), name='n8n-health'),
-    path(
-        'n8n/businesses/<int:business_id>/stage-progress/',
-        N8NStageStatusProgressUpdateView.as_view(),
-        name='n8n-stage-progress-update',
-    ),
+    path('n8n/businesses/<int:business_id>/stage-progress/',N8NStageStatusProgressUpdateView.as_view(),name='n8n-stage-progress-update'),
+    path('businesses/<int:business_id>/form-responses/',FormResponseCreateAPIView.as_view(),name='business-form-response-create'), # <-- ADICIONE ESTA LINHA
 ] + router.urls
