@@ -19,7 +19,6 @@ from .serializers import (
 from .utils import advance_business_stage
 from .permissions import HasN8NAPIKey
 
-from .serializers_onboarding import OnboardingSerializer
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
