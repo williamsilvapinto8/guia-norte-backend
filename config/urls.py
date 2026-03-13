@@ -12,13 +12,14 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView,
 )
 
-from core.views import RegisterView
+from core.views import RegisterView, OnboardingView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
 
     # Auth JWT
     path('api/auth/register/', RegisterView.as_view(), name='register'),
+    path('api/onboarding/', OnboardingView.as_view(), name='onboarding'),
     path('api/auth/login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/auth/verify/', TokenVerifyView.as_view(), name='token_verify'),
