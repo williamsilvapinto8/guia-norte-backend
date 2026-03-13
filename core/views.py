@@ -13,7 +13,7 @@ from .models import (
 from .serializers import (
     UserProfileSerializer, BusinessSerializer, BusinessStageHistorySerializer,
     StageStatusSerializer, FormResponseSerializer, DiagnosisSerializer,
-    ExperimentSerializer, RegisterSerializer, StageStatusProgressUpdateSerializer, OnboardingSerializer,
+    ExperimentSerializer, RegisterSerializer, StageStatusProgressUpdateSerializer, OnboardingSerializer, FormResponseCreateSerializer,
 )
 
 from .utils import advance_business_stage
@@ -205,3 +205,40 @@ class OnboardingView(generics.CreateAPIView):
         # Por enquanto, vamos retornar apenas o que o serializer.save() já nos dá.
 
         return Response(response_data, status=status.HTTP_201_CREATED)
+
+class FormResponseCreateAPIView(generics.CreateAPIView):
+    """
+    Endpoint para receber respostas de formulários (Ideação, Plano, MVP).
+    Pode ser usado pelo frontend (com JWT) ou pelo n8n (com API Key).
+    """
+    serializer_class = FormResponseCreateSerializer
+    # Permissões:
+    # - IsAuthenticated: para usuários logados (frontend)
+    # - HasN8NAPIKey: para requisições do n8n
+    permission_classes = [permissions.IsAuthenticated | HasN8NAPIKey]
+
+    def perform_create(self, serializer):
+        # O autor da resposta é o usuário logado (se houver)
+        # ou None se a requisição vier do n8n (que não tem um 'user' associado diretamente)
+        author = self.request.user if self.request.user.is_authenticated else None
+        form_response = serializer.save(author=author)
+
+        # Lógica de avanço de estágio (opcional, pode ser movida para o n8n)
+        # No seu FormResponseViewSet, você já tem uma lógica similar.
+        # Podemos replicá-la aqui ou decidir que o n8n será o orquestrador.
+        # Por enquanto, vamos manter a lógica aqui para consistência com o que você já tinha.
+
+        business = form_response.business
+        form_type = form_response.form_type
+
+        if form_type == "plan":
+            # tenta avançar de ideation -> plan
+            advance_business_stage(business, target_stage="plan", changed_by=author)
+        elif form_type == "mvp":
+            # tenta avançar de plan -> mvp
+            advance_business_stage(business, target_stage="mvp", changed_by=author)
+        # se for ideation, mantemos como está (já nasce em ideation)
+
+        # Opcional: Disparar um evento para o n8n aqui, informando que um formulário foi enviado.
+        # Isso seria feito com uma requisição HTTP para um webhook do n8n.
+        # Ex: requests.post("https://seu-n8n.com/webhook/form-submitted", json={"form_response_id": form_response.id})
