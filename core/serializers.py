@@ -7,6 +7,7 @@ from .models import (
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import transaction # <-- Adicione este import para garantir atomicidade
 from django.utils import timezone # <-- ADICIONE ESTE IMPORT
+from rest_framework.exceptions import ValidationError # <-- ADICIONE ESTE IMPORT
 
 User = get_user_model()
 
@@ -204,3 +205,55 @@ class OnboardingSerializer(serializers.Serializer):
     def update(self, instance, validated_data):
         # Este serializer é apenas para criação, não para atualização
         raise NotImplementedError("Este serializer não suporta operações de atualização.")
+
+# --- NOVO SERIALIZER: FormResponseCreateSerializer ---
+class FormResponseCreateSerializer(serializers.ModelSerializer):
+    # O campo 'data' é um JSONField, então o DRF o trata como um campo de dicionário.
+    # Podemos adicionar validações específicas para o conteúdo do JSON se necessário,
+    # mas por enquanto, vamos garantir que seja um dicionário.
+    data = serializers.JSONField(required=True)
+
+    class Meta:
+        model = FormResponse
+        fields = ['business', 'form_type', 'form_version', 'data']
+        read_only_fields = ['author'] # O autor será definido na view
+
+    def validate(self, attrs):
+        # Validação extra: Garante que o business existe e pertence ao usuário logado
+        business = attrs.get('business')
+        request = self.context.get('request')
+
+        if not business:
+            raise ValidationError({"business": "O ID do negócio é obrigatório."})
+
+        # Se a requisição vem de um usuário autenticado (frontend)
+        if request and request.user.is_authenticated:
+            if business.owner != request.user:
+                raise ValidationError({"business": "Você não tem permissão para enviar respostas para este negócio."})
+        # Se a requisição vem do n8n (via API Key), a permissão HasN8NAPIKey já lida com a segurança do business_id
+        # mas podemos adicionar uma validação aqui se o n8n enviar o business_id no payload e não na URL.
+        # Por enquanto, vamos assumir que o business_id vem na URL e o HasN8NAPIKey já validou.
+
+        # Validação para form_type
+        form_type = attrs.get('form_type')
+        if form_type not in [choice[0] for choice in FormResponse.FORM_TYPE_CHOICES]:
+            raise ValidationError({"form_type": "Tipo de formulário inválido."})
+
+        return attrs
+
+    @transaction.atomic
+    def create(self, validated_data):
+        # O autor será passado via context ou definido na view
+        author = self.context.get('request').user if self.context.get('request') else None
+        if not author or not author.is_authenticated:
+            # Se não houver usuário autenticado, e não for uma requisição do n8n,
+            # podemos definir um usuário padrão ou levantar um erro.
+            # Por simplicidade, vamos assumir que o autor é sempre definido pela view.
+            pass # A view deve garantir que 'author' seja setado.
+
+        form_response = FormResponse.objects.create(author=author, **validated_data)
+
+        # Opcional: Lógica para atualizar o StageStatus aqui ou deixar para o n8n
+        # Por enquanto, vamos deixar para o n8n ou para a view, para manter o serializer focado.
+
+        return form_response
