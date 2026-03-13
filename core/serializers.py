@@ -208,33 +208,23 @@ class OnboardingSerializer(serializers.Serializer):
 
 # --- NOVO SERIALIZER: FormResponseCreateSerializer ---
 class FormResponseCreateSerializer(serializers.ModelSerializer):
-    # O campo 'data' é um JSONField, então o DRF o trata como um campo de dicionário.
-    # Podemos adicionar validações específicas para o conteúdo do JSON se necessário,
-    # mas por enquanto, vamos garantir que seja um dicionário.
+    # O campo 'business' será fornecido pela view, não pelo payload.
+    # Definimos como required=False para que o serializer não o exija no data.
+    business = serializers.PrimaryKeyRelatedField(queryset=Business.objects.all(), required=False) # <-- ALTERAÇÃO AQUI
+
     data = serializers.JSONField(required=True)
 
     class Meta:
         model = FormResponse
         fields = ['business', 'form_type', 'form_version', 'data']
-        read_only_fields = ['author'] # O autor será definido na view
+        read_only_fields = ['author']
 
     def validate(self, attrs):
-        # Validação extra: Garante que o business existe e pertence ao usuário logado
-        business = attrs.get('business')
-        request = self.context.get('request')
+        # A validação de business agora será feita na view,
+        # pois o business_id vem da URL e é injetado.
+        # Podemos remover a validação de 'business' daqui ou ajustá-la.
+        # Por enquanto, vamos manter a validação de form_type.
 
-        if not business:
-            raise ValidationError({"business": "O ID do negócio é obrigatório."})
-
-        # Se a requisição vem de um usuário autenticado (frontend)
-        if request and request.user.is_authenticated:
-            if business.owner != request.user:
-                raise ValidationError({"business": "Você não tem permissão para enviar respostas para este negócio."})
-        # Se a requisição vem do n8n (via API Key), a permissão HasN8NAPIKey já lida com a segurança do business_id
-        # mas podemos adicionar uma validação aqui se o n8n enviar o business_id no payload e não na URL.
-        # Por enquanto, vamos assumir que o business_id vem na URL e o HasN8NAPIKey já validou.
-
-        # Validação para form_type
         form_type = attrs.get('form_type')
         if form_type not in [choice[0] for choice in FormResponse.FORM_TYPE_CHOICES]:
             raise ValidationError({"form_type": "Tipo de formulário inválido."})
@@ -243,17 +233,14 @@ class FormResponseCreateSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        # O autor será passado via context ou definido na view
-        author = self.context.get('request').user if self.context.get('request') else None
-        if not author or not author.is_authenticated:
-            # Se não houver usuário autenticado, e não for uma requisição do n8n,
-            # podemos definir um usuário padrão ou levantar um erro.
-            # Por simplicidade, vamos assumir que o autor é sempre definido pela view.
-            pass # A view deve garantir que 'author' seja setado.
+        # O business e o author são passados explicitamente pela view.
+        # Removemos eles de validated_data para evitar duplicidade se por acaso
+        # viessem no payload (o que não deveriam, mas é uma boa prática).
+        business = validated_data.pop('business', None)
+        author = validated_data.pop('author', None) # author também é passado pela view
 
-        form_response = FormResponse.objects.create(author=author, **validated_data)
+        if not business:
+            raise ValidationError({"business": "O negócio deve ser fornecido."})
 
-        # Opcional: Lógica para atualizar o StageStatus aqui ou deixar para o n8n
-        # Por enquanto, vamos deixar para o n8n ou para a view, para manter o serializer focado.
-
+        form_response = FormResponse.objects.create(business=business, author=author, **validated_data)
         return form_response
