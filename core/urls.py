@@ -19,7 +19,7 @@ urlpatterns = [
     path('n8n/health/', N8NHealthCheckView.as_view(), name='n8n-health'),
     path('n8n/businesses/<int:business_id>/stage-progress/',N8NStageStatusProgressUpdateView.as_view(),name='n8n-stage-progress-update'),
     path('businesses/<int:business_id>/form-responses/',FormResponseCreateAPIView.as_view(),name='business-form-response-create'), # <-- ADICIONE ESTA LINHA
-    path('n8n/businesses/<int:business_id>/context/',N8NBusinessContextView.as_view(),name='n8n-business-context', # --- NOVA URL: Endpoint para o n8n buscar contexto da IA ---
+    path('n8n/businesses/<int:business_id>/context/',N8NBusinessContextView.as_view(),name='n8n-business-context'), # --- NOVA URL: Endpoint para o n8n buscar contexto da IA ---
     path('n8n/diagnoses/',N8NDiagnosisCreateView.as_view(),name='n8n-diagnosis-create',
     ),
 ] + router.urls
