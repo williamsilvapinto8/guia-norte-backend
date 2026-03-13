@@ -13,7 +13,7 @@ from .models import (
 from .serializers import (
     UserProfileSerializer, BusinessSerializer, BusinessStageHistorySerializer,
     StageStatusSerializer, FormResponseSerializer, DiagnosisSerializer,
-    ExperimentSerializer, RegisterSerializer, StageStatusProgressUpdateSerializer,
+    ExperimentSerializer, RegisterSerializer, StageStatusProgressUpdateSerializer, OnboardingSerializer,
 )
 
 from .utils import advance_business_stage
