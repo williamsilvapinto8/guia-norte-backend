@@ -244,3 +244,56 @@ class FormResponseCreateSerializer(serializers.ModelSerializer):
 
         form_response = FormResponse.objects.create(business=business, author=author, **validated_data)
         return form_response
+
+# --- NOVO SERIALIZER: BusinessContextSerializer ---
+class BusinessContextSerializer(serializers.ModelSerializer):
+    # Serializer aninhado para o StageStatus
+    stage_status = StageStatusSerializer(read_only=True)
+
+    # Serializer aninhado para as FormResponses (pode ser uma lista)
+    # Usaremos o FormResponseSerializer existente, mas podemos customizá-lo se necessário
+    # Este campo será substituído por 'latest_form_responses' no to_representation
+    form_responses = FormResponseSerializer(many=True, read_only=True)
+
+    # Opcional: Adicionar o email do owner diretamente para facilitar o prompt
+    owner_email = serializers.EmailField(source='owner.email', read_only=True)
+    owner_username = serializers.CharField(source='owner.username', read_only=True)
+
+    class Meta:
+        model = Business
+        fields = [
+            'id', 'name', 'segment', 'business_type', 'stage', 'city', 'state',
+            'has_cnpj', 'revenue_range', 'owner_email', 'owner_username',
+            'stage_status', 'form_responses', # Campos aninhados
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = fields # Este serializer é apenas para leitura
+
+    def to_representation(self, instance):
+        """
+        Sobrescreve to_representation para filtrar form_responses por form_type
+        e garantir que apenas as mais recentes sejam incluídas, se desejado.
+        """
+        representation = super().to_representation(instance)
+
+        # Filtra as respostas do formulário para incluir apenas as mais recentes de cada tipo
+        # e organizá-las por tipo para facilitar o consumo pelo n8n/IA.
+        filtered_form_responses = {}
+        for form_type_choice, _ in FormResponse.FORM_TYPE_CHOICES:
+            # Pega a resposta mais recente para cada tipo de formulário
+            latest_response = instance.form_responses.filter(
+                form_type=form_type_choice,
+                is_active=True # Considera apenas respostas ativas
+            ).order_by('-created_at').first()
+
+            if latest_response:
+                # Usa o FormResponseSerializer para serializar a resposta individual
+                filtered_form_responses[f'{form_type_choice}_form_response'] = FormResponseSerializer(latest_response).data
+            else:
+                filtered_form_responses[f'{form_type_choice}_form_response'] = None # Ou um dicionário vazio
+
+        representation['latest_form_responses'] = filtered_form_responses
+        # Remove o campo 'form_responses' original que continha todas as respostas
+        representation.pop('form_responses', None)
+
+        return representation
