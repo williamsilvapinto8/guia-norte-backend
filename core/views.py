@@ -13,7 +13,7 @@ from .models import (
 from .serializers import (
     UserProfileSerializer, BusinessSerializer, BusinessStageHistorySerializer,
     StageStatusSerializer, FormResponseSerializer, DiagnosisSerializer,
-    ExperimentSerializer, RegisterSerializer, StageStatusProgressUpdateSerializer, OnboardingSerializer, FormResponseCreateSerializer,
+    ExperimentSerializer, RegisterSerializer, StageStatusProgressUpdateSerializer, OnboardingSerializer, FormResponseCreateSerializer, BusinessContextSerializer,
 )
 
 from .utils import advance_business_stage
@@ -252,3 +252,25 @@ class FormResponseCreateAPIView(generics.CreateAPIView):
         # Opcional: Disparar um evento para o n8n aqui, informando que um formulário foi enviado.
         # Isso seria feito com uma requisição HTTP para um webhook do n8n.
         # Ex: requests.post("https://seu-n8n.com/webhook/form-submitted", json={"form_response_id": form_response.id})
+
+# --- NOVA VIEW: N8NBusinessContextView ---
+class N8NBusinessContextView(generics.RetrieveAPIView):
+    """
+    Endpoint para o n8n buscar o contexto completo de um negócio para a IA.
+    Inclui dados do Business, StageStatus e as últimas FormResponses por tipo.
+    Autenticação via chave de API (HasN8NAPIKey).
+    """
+    permission_classes = [HasN8NAPIKey]
+    serializer_class = BusinessContextSerializer
+    queryset = Business.objects.all() # Define o queryset base
+    lookup_field = 'id' # O campo que será usado para buscar o negócio na URL
+
+    def get_object(self):
+        # Sobrescreve get_object para buscar o Business pelo business_id da URL
+        business_id = self.kwargs.get('business_id')
+        try:
+            # Prefetch related objects para evitar N+1 queries
+            business = self.queryset.select_related('owner', 'stage_status').prefetch_related('form_responses').get(id=business_id)
+        except Business.DoesNotExist:
+            raise Http404("Negócio não encontrado para o ID fornecido.")
+        return business
