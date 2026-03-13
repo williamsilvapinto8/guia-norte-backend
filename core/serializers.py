@@ -62,6 +62,62 @@ class DiagnosisSerializer(serializers.ModelSerializer):
         read_only_fields = ['created_at']
 
 
+class N8NDiagnosisCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer para o n8n criar diagnósticos gerados pela IA.
+    """
+    business_id = serializers.IntegerField(write_only=True)
+    form_response_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+
+    class Meta:
+        model = Diagnosis
+        fields = [
+            'id',
+            'business_id',
+            'form_response_id',
+            'diagnosis_type',
+            'diagnosis_version',
+            'status',
+            'error_message',
+            'content',
+            'raw_response',
+            'is_free',
+            'tokens_used',
+            'model_name',
+            'created_at',
+        ]
+        read_only_fields = ['id', 'created_at']
+
+    def validate(self, attrs):
+        business_id = attrs.get('business_id')
+        form_response_id = attrs.get('form_response_id')
+
+        # valida negócio
+        try:
+            business = Business.objects.get(id=business_id)
+        except Business.DoesNotExist:
+            raise serializers.ValidationError({"business_id": "Negócio não encontrado."})
+
+        attrs['business'] = business
+
+        # valida (opcionalmente) o form_response
+        if form_response_id is not None:
+            try:
+                form_response = FormResponse.objects.get(id=form_response_id, business=business)
+            except FormResponse.DoesNotExist:
+                raise serializers.ValidationError(
+                    {"form_response_id": "FormResponse não encontrado para este negócio."}
+                )
+            attrs['form_response'] = form_response
+
+        return attrs
+
+    def create(self, validated_data):
+        # remover campos auxiliares
+        validated_data.pop('business_id', None)
+        validated_data.pop('form_response_id', None)
+        return Diagnosis.objects.create(**validated_data)
+
 class ExperimentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Experiment
