@@ -21,6 +21,7 @@ from .serializers import (
 from .utils import advance_business_stage
 from .permissions import HasN8NAPIKey
 
+from django.conf import settings
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
@@ -288,3 +289,74 @@ class N8NDiagnosisCreateView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         # usamos o CreateAPIView padrão, só expondo o serializer
         return super().create(request, *args, **kwargs)
+
+class FormResponseCreateAPIView(generics.CreateAPIView):
+    """
+    Endpoint para receber respostas de formulários (Ideação, Plano, MVP).
+    Pode ser usado pelo frontend (com JWT) ou pelo n8n (com API Key).
+    """
+    serializer_class = FormResponseCreateSerializer
+    permission_classes = [permissions.IsAuthenticated | HasN8NAPIKey]
+
+    def get_serializer_context(self):
+        """
+        Adiciona o business_id da URL ao contexto do serializer.
+        """
+        context = super().get_serializer_context()
+        context['business_id'] = self.kwargs.get('business_id')
+        return context
+
+    def perform_create(self, serializer):
+        # Obtém o business_id do contexto (que veio da URL)
+        business_id = self.kwargs.get('business_id')
+        try:
+            business = Business.objects.get(id=business_id)
+        except Business.DoesNotExist:
+            raise Http404("Negócio não encontrado.")
+
+        # O autor da resposta é o usuário logado (se houver)
+        author = self.request.user if self.request.user.is_authenticated else None
+
+        # Validação de permissão extra: garante que o usuário tem acesso ao negócio
+        # (Isso já é feito no serializer, mas reforçar aqui não faz mal)
+        if author and business.owner != author:
+            raise permissions.PermissionDenied("Você não tem permissão para enviar respostas para este negócio.")
+
+        # Salva o FormResponse, passando o business e o author
+        form_response = serializer.save(business=business, author=author)
+
+        # Lógica de avanço de estágio
+        form_type = form_response.form_type
+        if form_type == "plan":
+            advance_business_stage(business, target_stage="plan", changed_by=author)
+        elif form_type == "mvp":
+            advance_business_stage(business, target_stage="mvp", changed_by=author)
+        # se for ideation, mantemos como está (já nasce em ideation)
+
+        # --- LÓGICA PARA NOTIFICAR O N8N ---
+        if form_type == "ideation": # Só notifica para formulários de ideação
+            n8n_webhook_url = settings.N8N_DIAGNOSIS_WEBHOOK_URL
+            n8n_api_key = settings.N8N_API_KEY
+
+            if n8n_webhook_url: # Garante que a URL está configurada
+                payload = {
+                    "business_id": business.id,
+                    "form_response_id": form_response.id,
+                    "form_type": form_response.form_type,
+                    "form_version": form_response.form_version,
+                }
+                headers = {
+                    "Content-Type": "application/json",
+                    # Adiciona a API Key apenas se ela estiver configurada
+                    **({"X-API-Key": n8n_api_key} if n8n_api_key else {})
+                }
+
+                try:
+                    # Dispara a requisição POST para o webhook do n8n
+                    response = requests.post(n8n_webhook_url, json=payload, headers=headers, timeout=5)
+                    response.raise_for_status() # Levanta um erro para status codes 4xx/5xx
+                    print(f"DEBUG: Notificação para n8n enviada com sucesso para {n8n_webhook_url}. Resposta: {response.status_code}")
+                except requests.exceptions.RequestException as e:
+                    print(f"ERRO: Falha ao notificar n8n sobre FormResponse {form_response.id}: {e}")
+                except Exception as e:
+                    print(f"ERRO INESPERADO ao notificar n8n: {e}")
