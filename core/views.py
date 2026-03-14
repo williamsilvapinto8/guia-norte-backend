@@ -276,7 +276,7 @@ class FormResponseCreateAPIView(generics.CreateAPIView):
                     N8N_DIAGNOSIS_WEBHOOK_URL,
                     json=payload,
                     headers=headers,
-                    timeout=10,
+                    timeout=20,
                 )
                 print(
                     f"[DEBUG] Notificação n8n enviada. "
