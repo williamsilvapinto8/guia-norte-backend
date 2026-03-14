@@ -11,3 +11,4 @@ djangorestframework-simplejwt==5.3.1
 # Testes
 pytest==8.3.5
 pytest-django==4.9.0
+requests
