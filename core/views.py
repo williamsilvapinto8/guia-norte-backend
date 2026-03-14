@@ -234,22 +234,20 @@ class FormResponseCreateAPIView(generics.CreateAPIView):
         return context
 
     def perform_create(self, serializer):
-        # Obtém o business_id do contexto (que veio da URL)
+        # Obtém o business_id da URL
         business_id = self.kwargs.get('business_id')
         try:
             business = Business.objects.get(id=business_id)
         except Business.DoesNotExist:
             raise Http404("Negócio não encontrado.")
 
-        # O autor da resposta é o usuário logado (se houver)
+        # Autor (se tiver JWT)
         author = self.request.user if self.request.user.is_authenticated else None
 
-        # Validação de permissão extra: garante que o usuário tem acesso ao negócio
-        # (Isso já é feito no serializer, mas reforçar aqui não faz mal)
         if author and business.owner != author:
             raise permissions.PermissionDenied("Você não tem permissão para enviar respostas para este negócio.")
 
-        # Salva o FormResponse, passando o business e o author
+        # Salva o FormResponse
         form_response = serializer.save(business=business, author=author)
 
         # Lógica de avanço de estágio
@@ -258,11 +256,36 @@ class FormResponseCreateAPIView(generics.CreateAPIView):
             advance_business_stage(business, target_stage="plan", changed_by=author)
         elif form_type == "mvp":
             advance_business_stage(business, target_stage="mvp", changed_by=author)
-        # se for ideation, mantemos como está (já nasce em ideation)
+        # ideation: mantém como está
 
-        # Opcional: Disparar um evento para o n8n aqui, informando que um formulário foi enviado.
-        # Isso seria feito com uma requisição HTTP para um webhook do n8n.
-        # Ex: requests.post("https://seu-n8n.com/webhook/form-submitted", json={"form_response_id": form_response.id})
+        # >>> NOTIFICAÇÃO PARA N8N (apenas para ideation) <<<
+        if form_type == "ideation" and N8N_DIAGNOSIS_WEBHOOK_URL:
+            payload = {
+                "business_id": business.id,
+                "form_response_id": form_response.id,
+                # se quiser já mandar um prompt-base ou qualquer outra info extra
+            }
+            headers = {
+                "Content-Type": "application/json",
+            }
+            if N8N_API_KEY:
+                headers["X-API-Key"] = N8N_API_KEY
+
+            try:
+                resp = requests.post(
+                    N8N_DIAGNOSIS_WEBHOOK_URL,
+                    json=payload,
+                    headers=headers,
+                    timeout=10,
+                )
+                print(
+                    f"[DEBUG] Notificação n8n enviada. "
+                    f"Status={resp.status_code}, Body={resp.text[:300]}"
+                )
+            except Exception as e:
+                # Não quebra o fluxo do usuário; só loga o problema
+                print(f"[ERRO] Falha ao notificar n8n para diagnóstico: {e}")
+        # <<< FIM NOTIFICAÇÃO >>>
 
 # --- NOVA VIEW: N8NBusinessContextView ---
 class N8NBusinessContextView(generics.RetrieveAPIView):
