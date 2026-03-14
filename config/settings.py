@@ -30,8 +30,6 @@ DEBUG = os.getenv("DEBUG", "true").lower() == "true"
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
-
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -152,3 +150,6 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'API do Guia Norte',
     'VERSION': '1.0.0',
 }
+
+N8N_DIAGNOSIS_WEBHOOK_URL = os.environ.get('N8N_DIAGNOSIS_WEBHOOK_URL', 'http://localhost:5678/webhook/diagnostico-ideacao')
+N8N_API_KEY = os.environ.get('N8N_API_KEY', 'gn-n8n-api-key-7c9f1d4e-2026')
