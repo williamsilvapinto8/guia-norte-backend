@@ -1,5 +1,13 @@
 import requests
 import os
+
+N8N_DIAGNOSIS_WEBHOOK_URL = os.environ.get(
+    'N8N_DIAGNOSIS_WEBHOOK_URL',
+    'https://n8n.cocrias.com.br/webhook/diagnostico-ideacao'  # ajuste depois
+)
+N8N_API_KEY = os.environ.get('N8N_API_KEY', '')
+
+
 from django.http import Http404
 from rest_framework import status, viewsets, permissions, generics
 from rest_framework_simplejwt.tokens import RefreshToken
