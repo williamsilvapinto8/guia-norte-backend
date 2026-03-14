@@ -1,3 +1,5 @@
+import requests
+import os
 from django.http import Http404
 from rest_framework import status, viewsets, permissions, generics
 from rest_framework_simplejwt.tokens import RefreshToken
