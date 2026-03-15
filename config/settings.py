@@ -42,9 +42,11 @@ INSTALLED_APPS = [
     'rest_framework',   # <--- adiciona
     'core',             # <--- adiciona
     'drf_spectacular',
+    'corsheaders', # Adicione esta linha
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware', # Adicione esta linha aqui
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -153,3 +155,38 @@ SPECTACULAR_SETTINGS = {
 
 N8N_DIAGNOSIS_WEBHOOK_URL = os.environ.get('N8N_DIAGNOSIS_WEBHOOK_URL', 'http://localhost:5678/webhook/diagnostico-ideacao')
 N8N_API_KEY = os.environ.get('N8N_API_KEY', 'sua_chave_de_teste_aqui')
+
+# Configurações de CORS
+CORS_ALLOWED_ORIGINS = [
+    "https://guianorte.cocrias.com.br", # Domínio do seu frontend
+    # "http://localhost:8000", # Se você estiver testando localmente com outro porta
+    # "http://127.0.0.1:8000", # Se você estiver testando localmente com outro porta
+]
+
+# Se você precisar permitir origens dinâmicas ou regex, use CORS_ALLOWED_ORIGIN_REGEXES
+# CORS_ALLOWED_ORIGIN_REGEXES = [
+#     r"^https://\w+\.guianorte\.cocrias\.com\.br$",
+# ]
+
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
+
+CORS_ALLOW_CREDENTIALS = True # Permite cookies e cabeçalhos de autorização
