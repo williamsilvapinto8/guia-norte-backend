@@ -160,7 +160,8 @@ N8N_API_KEY = os.environ.get('N8N_API_KEY', 'sua_chave_de_teste_aqui')
 # Configurações de CORS
 CORS_ALLOWED_ORIGINS = [
     "https://guianorte.cocrias.com.br", # Domínio do seu frontend
-    # "http://localhost:8000", # Se você estiver testando localmente com outro porta
+    'CORS_ALLOWED_ORIGINS',
+    'http://localhost:5173',
     # "http://127.0.0.1:8000", # Se você estiver testando localmente com outro porta
 ]
 
