@@ -216,31 +216,6 @@ class OnboardingView(generics.CreateAPIView):
 
         response_data = serializer.save() # Cria User, Business e StageStatus
 
-        # --- NOVA LÓGICA: Notificar o n8n para enviar o e-mail de boas-vindas ---
-        if N8N_WELCOME_WEBHOOK_URL:
-            payload = {
-                "nome": request.data.get('username', ''),
-                "email": request.data.get('email', ''),
-                "telefone_whatsapp": request.data.get('phone', ''), # Se o frontend enviar 'phone'
-                "business_name": request.data.get('business_name', ''),
-            }
-            headers = {
-                "Content-Type": "application/json",
-                # Se o webhook do n8n exigir API Key, adicione aqui:
-                # **({"X-API-Key": N8N_API_KEY} if N8N_API_KEY else {})
-            }
-
-            try:
-                # Dispara a requisição POST para o webhook do n8n
-                resp = requests.post(N8N_WELCOME_WEBHOOK_URL, json=payload, headers=headers, timeout=5)
-                resp.raise_for_status() # Levanta um erro para status codes 4xx/5xx
-                print(f"[DEBUG] Notificação n8n de boas-vindas enviada. Status={resp.status_code}, Body={resp.text[:300]}")
-            except requests.exceptions.RequestException as e:
-                print(f"[ERRO] Falha ao notificar n8n para e-mail de boas-vindas: {e}")
-            except Exception as e:
-                print(f"[ERRO INESPERADO] ao notificar n8n para e-mail de boas-vindas: {e}")
-        # --- FIM NOVA LÓGICA ---
-
         return Response(response_data, status=status.HTTP_201_CREATED)
 
         
