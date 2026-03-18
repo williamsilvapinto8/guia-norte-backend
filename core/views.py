@@ -115,6 +115,7 @@ class ExperimentViewSet(viewsets.ModelViewSet):
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -202,6 +203,7 @@ class OnboardingView(generics.CreateAPIView):
     """
     serializer_class = OnboardingSerializer
     permission_classes = [permissions.AllowAny] # Este endpoint é público para novos cadastros
+    authentication_classes = []
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
