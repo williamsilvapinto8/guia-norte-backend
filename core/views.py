@@ -197,35 +197,30 @@ class N8NStageStatusProgressUpdateView(generics.UpdateAPIView):
         return Response(response_serializer.data)
 
 class OnboardingView(generics.CreateAPIView):
-    """
-    Endpoint para o formulário de captura/pré-cadastro.
-    Cria um novo usuário, um negócio e o status inicial de estágio.
-    """
     serializer_class = OnboardingSerializer
-    permission_classes = [permissions.AllowAny] # Este endpoint é público para novos cadastros
+    permission_classes = [permissions.AllowAny]
     authentication_classes = []
 
     def create(self, request, *args, **kwargs):
-    serializer = self.get_serializer(data=request.data)
-    serializer.is_valid(raise_exception=True)
-    response_data = serializer.save()
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        response_data = serializer.save()
 
-    # Notifica o n8n para enviar o e-mail de boas-vindas
-    try:
-        import requests as req
-        req.post(
-            'https://n8n.cocrias.com.br/webhook/captura-inicial',
-            json={
-                'nome': request.data.get('username', ''),
-                'email': request.data.get('email', ''),
-                'telefone_whatsapp': '',
-            },
-            timeout=5
-        )
-    except Exception as e:
-        print(f'[AVISO] Falha ao notificar n8n boas-vindas: {e}')
+        try:
+            import requests as req
+            req.post(
+                'https://n8n.cocrias.com.br/webhook/captura-inicial',
+                json={
+                    'nome': request.data.get('username', ''),
+                    'email': request.data.get('email', ''),
+                    'telefone_whatsapp': '',
+                },
+                timeout=5
+            )
+        except Exception as e:
+            print(f'[AVISO] Falha ao notificar n8n boas-vindas: {e}')
 
-    return Response(response_data, status=status.HTTP_201_CREATED)
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
         
 
