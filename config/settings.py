@@ -165,7 +165,6 @@ CORS_ALLOWED_ORIGINS = [
     "https://app.guianorte.com.br",
 ]
     # "http://127.0.0.1:8000", # Se você estiver testando localmente com outro porta
-]
 
 # Se você precisar permitir origens dinâmicas ou regex, use CORS_ALLOWED_ORIGIN_REGEXES
 # CORS_ALLOWED_ORIGIN_REGEXES = [
