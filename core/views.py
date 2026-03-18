@@ -206,33 +206,26 @@ class OnboardingView(generics.CreateAPIView):
     authentication_classes = []
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+    serializer = self.get_serializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    response_data = serializer.save()
 
-        # O método create do serializer já lida com a criação de User, Business e StageStatus
-        # Ele retorna um dicionário com user_id, business_id e message
-        response_data = serializer.save() 
-        
-        try:
-            requests.post(
-                'https://n8n.cocrias.com.br/webhook/captura-inicial',
-                json={
-                    'nome': request.data.get('username'),
-                    'email': request.data.get('email'),
-                    'telefone_whatsapp': '',
-                },
-                timeout=5
-            )
-        except Exception as e:
-            print(f'[AVISO] Falha ao notificar n8n boas-vindas: {e}')
-        
+    # Notifica o n8n para enviar o e-mail de boas-vindas
+    try:
+        import requests as req
+        req.post(
+            'https://n8n.cocrias.com.br/webhook/captura-inicial',
+            json={
+                'nome': request.data.get('username', ''),
+                'email': request.data.get('email', ''),
+                'telefone_whatsapp': '',
+            },
+            timeout=5
+        )
+    except Exception as e:
+        print(f'[AVISO] Falha ao notificar n8n boas-vindas: {e}')
 
-
-        # Opcional: Se você quiser retornar tokens JWT automaticamente após o onboarding,
-        # você pode replicar a lógica da RegisterView aqui.
-        # Por enquanto, vamos retornar apenas o que o serializer.save() já nos dá.
-
-        return Response(response_data, status=status.HTTP_201_CREATED)
+    return Response(response_data, status=status.HTTP_201_CREATED)
 
         
 
