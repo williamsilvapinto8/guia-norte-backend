@@ -1,6 +1,11 @@
 import requests
 import os
 
+N8N_WELCOME_WEBHOOK_URL = os.environ.get(
+    'N8N_WELCOME_WEBHOOK_URL',
+    'https://n8n.cocrias.com.br/webhook/captura-inicial'
+)
+
 N8N_DIAGNOSIS_WEBHOOK_URL = os.environ.get(
     'N8N_DIAGNOSIS_WEBHOOK_URL',
     'https://n8n.cocrias.com.br/webhook/diagnostico-ideacao'  # ajuste depois
@@ -197,28 +202,44 @@ class N8NStageStatusProgressUpdateView(generics.UpdateAPIView):
         return Response(response_serializer.data)
 
 class OnboardingView(generics.CreateAPIView):
+    """
+    Endpoint para o formulário de captura/pré-cadastro.
+    Cria um novo usuário, um negócio e o status inicial de estágio.
+    """
     serializer_class = OnboardingSerializer
-    permission_classes = [permissions.AllowAny]
-    authentication_classes = []
+    permission_classes = [permissions.AllowAny] # Este endpoint é público para novos cadastros
+    authentication_classes = [] # Adicione esta linha para permitir acesso sem autenticação JWT
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        response_data = serializer.save()
 
-        try:
-            import requests as req
-            req.post(
-                'https://n8n.cocrias.com.br/webhook/captura-inicial',
-                json={
-                    'nome': request.data.get('username', ''),
-                    'email': request.data.get('email', ''),
-                    'telefone_whatsapp': '',
-                },
-                timeout=5
-            )
-        except Exception as e:
-            print(f'[AVISO] Falha ao notificar n8n boas-vindas: {e}')
+        response_data = serializer.save() # Cria User, Business e StageStatus
+
+        # --- NOVA LÓGICA: Notificar o n8n para enviar o e-mail de boas-vindas ---
+        if N8N_WELCOME_WEBHOOK_URL:
+            payload = {
+                "nome": request.data.get('username', ''),
+                "email": request.data.get('email', ''),
+                "telefone_whatsapp": request.data.get('phone', ''), # Se o frontend enviar 'phone'
+                "business_name": request.data.get('business_name', ''),
+            }
+            headers = {
+                "Content-Type": "application/json",
+                # Se o webhook do n8n exigir API Key, adicione aqui:
+                # **({"X-API-Key": N8N_API_KEY} if N8N_API_KEY else {})
+            }
+
+            try:
+                # Dispara a requisição POST para o webhook do n8n
+                resp = requests.post(N8N_WELCOME_WEBHOOK_URL, json=payload, headers=headers, timeout=5)
+                resp.raise_for_status() # Levanta um erro para status codes 4xx/5xx
+                print(f"[DEBUG] Notificação n8n de boas-vindas enviada. Status={resp.status_code}, Body={resp.text[:300]}")
+            except requests.exceptions.RequestException as e:
+                print(f"[ERRO] Falha ao notificar n8n para e-mail de boas-vindas: {e}")
+            except Exception as e:
+                print(f"[ERRO INESPERADO] ao notificar n8n para e-mail de boas-vindas: {e}")
+        # --- FIM NOVA LÓGICA ---
 
         return Response(response_data, status=status.HTTP_201_CREATED)
 
